@@ -1,0 +1,12 @@
+{
+  "_note": "Active deforestation frontiers ingested daily (scripts/ingest_all.py, .github/workflows/ingest.yml). bbox = minLon,minLat,maxLon,maxLat.",
+  "regions": [
+    {"id": "rondonia",        "label": "Rondônia, Brazil",          "bbox": "-64.5,-12.5,-60.5,-8.0", "max_tasks": 250},
+    {"id": "para-br163",      "label": "Pará (BR-163), Brazil",      "bbox": "-56.5,-8.5,-54.5,-6.0",  "max_tasks": 150},
+    {"id": "para-xingu",      "label": "Pará (Xingu), Brazil",       "bbox": "-53.0,-8.0,-51.0,-5.5",  "max_tasks": 150},
+    {"id": "amazonas-south",  "label": "Southern Amazonas, Brazil",  "bbox": "-66.0,-9.0,-62.0,-7.0",  "max_tasks": 150},
+    {"id": "amazonas-apui",   "label": "Apuí, Amazonas, Brazil",     "bbox": "-61.0,-8.5,-58.5,-6.5",  "max_tasks": 100},
+    {"id": "mato-grosso-nw",  "label": "Northwest Mato Grosso, Brazil", "bbox": "-61.5,-11.0,-58.0,-8.5", "max_tasks": 150},
+    {"id": "acre",            "label": "Acre, Brazil",               "bbox": "-69.0,-11.0,-66.5,-9.0", "max_tasks": 100}
+  ]
+}

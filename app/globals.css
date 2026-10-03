@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #080c09;
+  --panel: #0f1611;
+  --panel-2: #142017;
+  --line: #1f2d23;
+  --fg: #dfe8e0;
+  --muted: #869a8b;
+  --accent: #5fd38a;
+  --warn: #f2b84b;
+  --bad: #ef6b5b;
+  --alert: #ff6b4a;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-line: var(--line);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --color-alert: var(--alert);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.num {
+  font-family: var(--font-geist-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Rendered markdown (specs, docs) */
+.prose-cw {
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.prose-cw h1 { font-size: 1.75rem; font-weight: 600; margin: 0 0 1rem; }
+.prose-cw h2 { font-size: 1.25rem; font-weight: 600; margin: 2.25rem 0 0.75rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+.prose-cw h3 { font-size: 1.05rem; font-weight: 600; margin: 1.5rem 0 0.5rem; }
+.prose-cw p, .prose-cw ul, .prose-cw ol, .prose-cw table, .prose-cw pre { margin: 0 0 1rem; }
+.prose-cw ul { list-style: disc; padding-left: 1.25rem; }
+.prose-cw ol { list-style: decimal; padding-left: 1.25rem; }
+.prose-cw li { margin: 0.25rem 0; }
+.prose-cw a { color: var(--accent); text-decoration: underline; }
+.prose-cw strong { color: #fff; }
+.prose-cw code { font-family: var(--font-geist-mono); font-size: 0.85em; background: var(--panel-2); padding: 0.1em 0.35em; border-radius: 4px; }
+.prose-cw pre { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 1rem; overflow-x: auto; }
+.prose-cw pre code { background: none; padding: 0; font-size: 0.8rem; }
+.prose-cw table { display: block; overflow-x: auto; border-collapse: collapse; font-size: 0.9rem; }
+.prose-cw th, .prose-cw td { border: 1px solid var(--line); padding: 0.4rem 0.6rem; text-align: left; vertical-align: top; }
+.prose-cw th { background: var(--panel); }
+.prose-cw hr { border-color: var(--line); margin: 2rem 0; }
+
+/* MapLibre popups/controls on dark */
+.maplibregl-ctrl-attrib { background: rgba(8, 12, 9, 0.75) !important; color: var(--muted) !important; }
+.maplibregl-ctrl-attrib a { color: var(--muted) !important; }
+.maplibregl-ctrl-group { background: var(--panel) !important; border: 1px solid var(--line); }
+.maplibregl-ctrl-group button + button { border-top: 1px solid var(--line) !important; }
+.maplibregl-ctrl-icon { filter: invert(0.9); }

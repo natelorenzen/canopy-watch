@@ -1,0 +1,26 @@
+# Daily: pull fresh GFW alerts into the task queue (scripts/ingest_gfw_alerts.py). Duplicates are skipped.
+# Repo secrets: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, GFW_API_KEY.
+name: Ingest alerts
+
+on:
+  schedule:
+    - cron: "0 9 * * *" # 09:00 UTC daily
+  workflow_dispatch:
+
+concurrency: ingest
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      GFW_API_KEY: ${{ secrets.GFW_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: All regions (daily top-up, see scripts/regions.json)
+        run: python3 scripts/ingest_all.py --since "$(date -u -d '30 days ago' +%F)" --scale 0.2
