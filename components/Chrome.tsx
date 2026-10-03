@@ -82,6 +82,7 @@ export function SiteFooter() {
           <p><Link className="hover:text-fg" href="/terms">Terms, privacy & disclaimers</Link></p>
           <p><Link className="hover:text-fg" href="/donate#stop">Stop volunteering & forget</Link></p>
           <p><Link className="hover:text-fg" href="/about">Methods & accuracy</Link></p>
+          <p><a className="hover:text-fg" href="https://github.com/natelorenzen/canopy-watch">Source code on GitHub (MIT)</a></p>
         </div>
         <div className="space-y-1.5">
           <p className="font-medium text-fg">Credits</p>
