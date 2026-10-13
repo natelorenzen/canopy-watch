@@ -28,7 +28,7 @@ python3 scripts/e2e_test.py http://localhost:3000       # needs: ingest --region
 Without a GFW key, `--alerts-csv` accepts alert pixels as `lat,lon,date,confidence` (e.g. a GFW download).
 
 ## Daily refresh
-`.github/workflows/ingest.yml` runs the ingest at 09:00 UTC (repo secrets `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `GFW_API_KEY`). Run it by hand from the Actions tab ("Run workflow").
+`.github/workflows/ingest.yml` runs the ingest at 09:00 UTC (repo secrets `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `GFW_API_KEY`). Run it by hand from the Actions tab ("Run workflow"). Each run is capped at a 20-minute script budget (shared across regions) and a 30-minute job timeout; patches with no clear imagery are cached and rechecked every 4 days (`--checked-file`).
 
 ## Validation seeding
 ```bash

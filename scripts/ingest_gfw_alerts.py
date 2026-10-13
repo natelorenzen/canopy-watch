@@ -16,8 +16,11 @@ from __future__ import annotations
 import argparse
 import csv
 import datetime as dt
+import json
 import math
+import pathlib
 import sys
+import time
 from collections import defaultdict
 
 sys.path.insert(0, __file__.rsplit("/", 1)[0])
@@ -26,6 +29,22 @@ from _common import IMG_PX, WINDOW_KM, Supabase, Window, find_scene, gfw_headers
 PIXEL_HA = 0.01  # one 10 m alert pixel
 GRID_DEG = 0.0009  # ≈100 m clustering cell
 CONF_RANK = {"low": 1, "nominal": 1, "high": 2, "highest": 3}
+RECHECK_DAYS = 4  # a patch with no clear scene isn't looked at again for this long
+CHECKED_KEEP_DAYS = 45
+
+
+def checked_key(c: dict) -> str:
+    return f"{c['lat']:.3f},{c['lon']:.3f}"
+
+
+def load_checked(path: pathlib.Path) -> dict[str, str]:
+    """{patch key: date last checked without finding imagery}; kept between runs by the workflow's cache."""
+    try:
+        data = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return {}
+    cutoff = str(dt.date.today() - dt.timedelta(days=CHECKED_KEEP_DAYS))
+    return {k: v for k, v in data.items() if v >= cutoff}
 
 
 def _fetch_cell(cell: list[float], since: str, until: str, headers: dict, depth: int = 0) -> list[dict]:
@@ -193,10 +212,15 @@ def main() -> None:
     ap.add_argument("--until", default=str(dt.date.today()))
     ap.add_argument("--min-ha", type=float, default=0.5)
     ap.add_argument("--max-tasks", type=int, default=300)
+    ap.add_argument("--max-attempts", type=int, help="stop after checking this many patches for imagery (default 3× --max-tasks)")
+    ap.add_argument("--time-budget", type=float, help="stop checking patches after this many seconds")
+    ap.add_argument("--checked-file", help=f"JSON of patches with no clear imagery yet; they're skipped for {RECHECK_DAYS} days")
     ap.add_argument("--alerts-csv", help="use a CSV of alert pixels instead of the GFW API")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
     load_env()
+    started = time.monotonic()
+    max_attempts = a.max_attempts or 3 * a.max_tasks
 
     bbox = [float(v) for v in a.bbox.split(",")]
     pixels = read_csv(a.alerts_csv) if a.alerts_csv else fetch_gfw(bbox, a.since, a.until)
@@ -220,6 +244,14 @@ def main() -> None:
     if before_n != len(clusters):
         print(f"{before_n - len(clusters)} clusters already covered by existing tasks", file=sys.stderr)
 
+    checked_path = pathlib.Path(a.checked_file) if a.checked_file else None
+    checked = load_checked(checked_path) if checked_path else {}
+    recheck = str(dt.date.today() - dt.timedelta(days=RECHECK_DAYS))
+    before_n = len(clusters)
+    clusters = [c for c in clusters if checked.get(checked_key(c), "") < recheck]
+    if before_n != len(clusters):
+        print(f"{before_n - len(clusters)} clusters checked in the last {RECHECK_DAYS} days without clear imagery", file=sys.stderr)
+
     sb = None if a.dry_run else Supabase()
     tasks, batch, skipped, inserted = [], [], 0, 0
 
@@ -229,8 +261,15 @@ def main() -> None:
             inserted += len(sb.insert("tasks", batch, on_conflict="project_id,external_ref", ignore_duplicates=True))
         batch.clear()
 
+    stop = ""
     for c in clusters:
         if len(tasks) >= a.max_tasks:
+            break
+        if len(tasks) + skipped >= max_attempts:
+            stop = f"attempt cap ({max_attempts})"
+            break
+        if a.time_budget and time.monotonic() - started > a.time_budget:
+            stop = f"time budget ({a.time_budget:.0f}s)"
             break
         t = build_task(c, a.region)
         if t:
@@ -241,14 +280,18 @@ def main() -> None:
                 flush()  # save as we go so tasks appear on the site immediately
         else:
             skipped += 1
+            checked[checked_key(c)] = str(dt.date.today())
         if (len(tasks) + skipped) % 10 == 0:
             print(f"  … {len(tasks)} tasks built, {skipped} without clear imagery", file=sys.stderr)
     flush()
+    if checked_path and not a.dry_run:
+        checked_path.parent.mkdir(parents=True, exist_ok=True)
+        checked_path.write_text(json.dumps(checked, sort_keys=True))
+    if stop:
+        print(f"Stopped early: {stop}; the rest wait for the next run", file=sys.stderr)
 
     print(f"Built {len(tasks)} tasks ({skipped} clusters skipped: no cloud-free scene yet)", file=sys.stderr)
     if a.dry_run:
-        import json
-
         print(json.dumps(tasks[:3], indent=2))
         return
     total_ha = sum(t["area_ha"] for t in tasks)
