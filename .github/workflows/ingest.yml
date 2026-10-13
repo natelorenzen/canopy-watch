@@ -1,5 +1,8 @@
 # Daily: pull fresh GFW alerts into the task queue (scripts/ingest_gfw_alerts.py). Duplicates are skipped.
 # Repo secrets: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, GFW_API_KEY.
+# Bounded so it fits the free Actions minutes: a 20-minute script budget shared across regions, a
+# 30-minute hard timeout, and a cached list of patches with no clear imagery so they're rechecked
+# every few days instead of every run.
 name: Ingest alerts
 
 on:
@@ -11,16 +14,28 @@ concurrency: ingest
 
 jobs:
   ingest:
-    runs-on: ubuntu-latest
-    timeout-minutes: 240
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     env:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       GFW_API_KEY: ${{ secrets.GFW_API_KEY }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
+      - name: Restore checked-patch list
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/ingest-checked.json
+          key: ingest-checked-${{ github.run_id }}
+          restore-keys: ingest-checked-
       - name: All regions (daily top-up, see scripts/regions.json)
-        run: python3 scripts/ingest_all.py --since "$(date -u -d '30 days ago' +%F)" --scale 0.2
+        run: python3 scripts/ingest_all.py --since "$(date -u -d '30 days ago' +%F)" --scale 0.2 --time-budget 1200 --checked-file .cache/ingest-checked.json
+      - name: Save checked-patch list
+        if: always()
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/ingest-checked.json
+          key: ingest-checked-${{ github.run_id }}
