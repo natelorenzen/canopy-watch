@@ -213,13 +213,12 @@ def main() -> None:
     ap.add_argument("--min-ha", type=float, default=0.5)
     ap.add_argument("--max-tasks", type=int, default=300)
     ap.add_argument("--max-attempts", type=int, help="stop after checking this many patches for imagery (default 3× --max-tasks)")
-    ap.add_argument("--time-budget", type=float, help="stop checking patches after this many seconds")
+    ap.add_argument("--time-budget", type=float, help="seconds for imagery checks, counted after the alert fetch")
     ap.add_argument("--checked-file", help=f"JSON of patches with no clear imagery yet; they're skipped for {RECHECK_DAYS} days")
     ap.add_argument("--alerts-csv", help="use a CSV of alert pixels instead of the GFW API")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
     load_env()
-    started = time.monotonic()
     max_attempts = a.max_attempts or 3 * a.max_tasks
 
     bbox = [float(v) for v in a.bbox.split(",")]
@@ -261,6 +260,7 @@ def main() -> None:
             inserted += len(sb.insert("tasks", batch, on_conflict="project_id,external_ref", ignore_duplicates=True))
         batch.clear()
 
+    started = time.monotonic()  # the alert fetch is bounded by --since, not by this budget
     stop = ""
     for c in clusters:
         if len(tasks) >= a.max_tasks:
